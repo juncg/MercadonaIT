@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./card";
 import { Button } from "./button";
 
 interface Message {
     text: string;
     isUser: boolean;
+    parts?: string[];
+    currentPart?: number;
 }
 
 interface Producto {
@@ -28,33 +30,135 @@ export function Chat({
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!inputValue.trim()) return;
+    const presetQuestions = [
+        "Hazme una dieta con los productos de la lista",
+        "Recomiéndame productos saludables",
+    ];
 
-        const userMessage = { text: inputValue, isUser: true };
+    useEffect(() => {
+        // Efecto para mostrar progresivamente los mensajes
+        const interval = setInterval(() => {
+            setMessages((prevMessages) => {
+                return prevMessages.map((message) => {
+                    if (
+                        !message.isUser &&
+                        message.parts &&
+                        message.currentPart !== undefined
+                    ) {
+                        if (message.currentPart < message.parts.length - 1) {
+                            return {
+                                ...message,
+                                text: message.parts
+                                    .slice(0, message.currentPart + 2)
+                                    .join("\n\n"),
+                                currentPart: message.currentPart + 1,
+                            };
+                        }
+                    }
+                    return message;
+                });
+            });
+        }, 1000); // Mostrar un nuevo párrafo cada segundo
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const handlePresetQuestion = (question: string) => {
+        handleSubmit(new Event("submit") as any, question);
+    };
+
+    const handleSubmit = async (
+        e: React.FormEvent,
+        presetQuestion?: string
+    ) => {
+        e.preventDefault();
+        const messageText = presetQuestion || inputValue;
+        if (!messageText.trim()) return;
+
+        // Validación mejorada de productos
+        console.log("Productos disponibles:", productosDisponibles);
+        console.log("Productos seleccionados:", productosSeleccionados);
+
+        if (
+            !Array.isArray(productosDisponibles) ||
+            productosDisponibles.length === 0
+        ) {
+            const errorMessage =
+                "Error: No hay productos disponibles para procesar tu solicitud.";
+            console.error(errorMessage);
+            setMessages((prev) => [
+                ...prev,
+                { text: messageText, isUser: true },
+                { text: errorMessage, isUser: false },
+            ]);
+            return;
+        }
+
+        // Verificar la estructura de los productos
+        const validProducts = productosDisponibles.every(
+            (p) =>
+                p.id &&
+                p.nombre &&
+                p.categoria &&
+                typeof p.precio !== "undefined"
+        );
+
+        if (!validProducts) {
+            const errorMessage =
+                "Error: La estructura de los productos no es válida.";
+            console.error(errorMessage);
+            setMessages((prev) => [
+                ...prev,
+                { text: messageText, isUser: true },
+                { text: errorMessage, isUser: false },
+            ]);
+            return;
+        }
+
+        const userMessage = { text: messageText, isUser: true };
         setMessages((prev) => [...prev, userMessage]);
         setInputValue("");
         setIsLoading(true);
 
         try {
+            const requestData = {
+                prompt: messageText,
+                productosDisponibles,
+                productosSeleccionados: productosSeleccionados || [],
+            };
+
+            console.log(
+                "Enviando al servidor:",
+                JSON.stringify(requestData, null, 2)
+            );
+
             const response = await fetch("http://localhost:3001/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    prompt: inputValue,
-                    productosDisponibles,
-                    productosSeleccionados,
-                }),
+                body: JSON.stringify(requestData),
             });
 
-            if (!response.ok)
-                throw new Error("Error en la respuesta del servidor");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(
+                    errorData.error || "Error en la respuesta del servidor"
+                );
+            }
 
             const data = await response.json();
-            const aiMessage = { text: data.response, isUser: false };
+            console.log("Respuesta del servidor:", data);
+
+            const parts = data.response.split("\n\n").filter(Boolean);
+
+            const aiMessage: Message = {
+                text: parts[0],
+                isUser: false,
+                parts: parts,
+                currentPart: 0,
+            };
+
             setMessages((prev) => [...prev, aiMessage]);
         } catch (error) {
             console.error("Error:", error);
@@ -76,6 +180,23 @@ export function Chat({
                 <CardTitle>Chat Asistente</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow overflow-y-auto space-y-4">
+                {/* Preset Questions */}
+                {messages.length === 0 && (
+                    <div className="flex flex-col gap-2">
+                        {presetQuestions.map((question, index) => (
+                            <Button
+                                key={index}
+                                variant="outline"
+                                className="text-left"
+                                onClick={() => handlePresetQuestion(question)}
+                            >
+                                {question}
+                            </Button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Chat Messages */}
                 {messages.map((message, index) => (
                     <div
                         key={index}

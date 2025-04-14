@@ -153,16 +153,20 @@ function App() {
     };
 
     return (
-        <div className="flex h-screen">
+        <div className="flex h-screen bg-green-50">
             <div className="flex-1 p-8 overflow-auto">
-                <h1 className="text-3xl font-bold mb-6 text-center">
-                    Productos de Alimentación
+                <h1 className="text-3xl font-bold mb-6 text-center text-green-800">
+                    Productos disponibles
                 </h1>
 
                 <div className="mb-6 flex justify-center">
-                    <Button onClick={handleRefresh} disabled={loading}>
-                        {loading ? "Cargando..." : "Refrescar Productos"}
-                    </Button>
+                    <input
+                        type="text"
+                        placeholder="Buscar productos..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="px-4 py-2 border border-green-300 rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
                 </div>
 
                 {error && (
@@ -179,13 +183,15 @@ function App() {
                     {/* Lista Uno - Usando Card de Shadcn */}
                     <Card className="flex-1">
                         <CardHeader>
-                            <CardTitle>Lista de Compra 1</CardTitle>
-                            <CardDescription>
-                                Arrastra productos a la otra lista
+                            <CardTitle className="text-green-800">
+                                Productos Disponibles
+                            </CardTitle>
+                            <CardDescription className="text-green-700">
+                                Arrastra productos a tu cesta
                             </CardDescription>
                         </CardHeader>
                         <CardContent
-                            className="border-2 border-dashed border-gray-200 rounded-md p-4 min-h-[400px]"
+                            className="border-2 border-dashed border-green-300 rounded-md p-4 min-h-[300px] h-[300px] overflow-y-auto"
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, "uno")}
                         >
@@ -195,59 +201,52 @@ function App() {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {listaUno.map((producto) => (
-                                        <div
-                                            key={producto.id}
-                                            draggable
-                                            onDragStart={(e) =>
-                                                handleDragStart(
-                                                    e,
-                                                    producto,
-                                                    "uno"
-                                                )
-                                            }
-                                            onDragEnd={handleDragEnd}
-                                            className={`p-3 bg-card border rounded-md shadow-sm cursor-move transition-opacity ${
-                                                dragging === producto.id
-                                                    ? "opacity-50"
-                                                    : "opacity-100"
-                                            } hover:shadow-md`}
-                                        >
-                                            <div className="flex gap-3">
-                                                <img
-                                                    src={producto.imagen}
-                                                    alt={producto.nombre}
-                                                    className="w-20 h-20 object-cover rounded-md"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src = 'https://prod-mercadona.imgix.net/images/default_product.jpg';
-                                                    }}
-                                                />
-                                                <div className="flex-1">
-                                                    <div className="font-medium text-lg">
-                                                        {producto.nombre}
-                                                    </div>
-                                                    <div className="flex justify-between items-center mt-1">
-                                                        <Badge variant="outline">
-                                                            {producto.categoria}
-                                                        </Badge>
-                                                        {producto.precio && (
-                                                            <span className="text-sm font-semibold">
-                                                                {producto.precio.toFixed(
-                                                                    2
-                                                                )}
-                                                                €
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                    {filterProductos(listaUno).map(
+                                        (producto) => (
+                                            <div
+                                                key={producto.id}
+                                                draggable
+                                                onDragStart={(e) =>
+                                                    handleDragStart(
+                                                        e,
+                                                        producto,
+                                                        "uno"
+                                                    )
+                                                }
+                                                onDragEnd={handleDragEnd}
+                                                className={`p-3 bg-white border rounded-md shadow-sm cursor-move transition-opacity hover:shadow-md ${
+                                                    dragging === producto.id
+                                                        ? "opacity-50"
+                                                        : "opacity-100"
+                                                }`}
+                                            >
+                                                <div className="font-medium text-lg text-green-800">
+                                                    {producto.nombre}
+                                                </div>
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-green-300 text-green-700"
+                                                    >
+                                                        {producto.categoria}
+                                                    </Badge>
+                                                    {producto.precio && (
+                                                        <span className="text-sm font-semibold text-green-800">
+                                                            {producto.precio.toFixed(
+                                                                2
+                                                            )}
+                                                            €
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    )}
                                 </div>
                             )}
                         </CardContent>
                         <CardFooter>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-green-500">
                                 {listaUno.length} productos en esta lista
                             </div>
                         </CardFooter>
@@ -256,13 +255,15 @@ function App() {
                     {/* Lista Dos - Usando Card de Shadcn */}
                     <Card className="flex-1">
                         <CardHeader>
-                            <CardTitle>Lista de Compra 2</CardTitle>
-                            <CardDescription>
-                                Arrastra productos a la otra lista
+                            <CardTitle className="text-green-800">
+                                Cesta de la Compra
+                            </CardTitle>
+                            <CardDescription className="text-green-700">
+                                Arrastra productos aquí
                             </CardDescription>
                         </CardHeader>
                         <CardContent
-                            className="border-2 border-dashed border-gray-200 rounded-md p-4 min-h-[400px]"
+                            className="border-2 border-dashed border-green-300 rounded-md p-4 min-h-[300px] h-[300px] overflow-y-auto"
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, "dos")}
                         >
@@ -272,93 +273,99 @@ function App() {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {listaDos.map((producto) => (
-                                        <div
-                                            key={producto.id}
-                                            draggable
-                                            onDragStart={(e) =>
-                                                handleDragStart(
-                                                    e,
-                                                    producto,
-                                                    "dos"
-                                                )
-                                            }
-                                            onDragEnd={handleDragEnd}
-                                            className={`p-3 bg-card border rounded-md shadow-sm cursor-move transition-opacity ${
-                                                dragging === producto.id
-                                                    ? "opacity-50"
-                                                    : "opacity-100"
-                                            } hover:shadow-md`}
-                                        >
-                                            <div className="flex gap-3">
-                                                <img
-                                                    src={producto.imagen}
-                                                    alt={producto.nombre}
-                                                    className="w-20 h-20 object-cover rounded-md"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src = 'https://prod-mercadona.imgix.net/images/default_product.jpg';
-                                                    }}
-                                                />
-                                                <div className="flex-1">
-                                                    <div className="font-medium text-lg">
-                                                        {producto.nombre}
-                                                    </div>
-                                                    <div className="flex justify-between items-center mt-1">
-                                                        <Badge variant="outline">
-                                                            {producto.categoria}
-                                                        </Badge>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex items-center border rounded-md">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    className="h-8 w-8 p-0"
-                                                                    onClick={() =>
-                                                                        decrementarCantidad(
-                                                                            producto.id
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    -
-                                                                </Button>
-                                                                <span className="w-8 text-center">
-                                                                    {producto.cantidad ||
-                                                                        1}
-                                                                </span>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    className="h-8 w-8 p-0"
-                                                                    onClick={() =>
-                                                                        incrementarCantidad(
-                                                                            producto.id
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    +
-                                                                </Button>
-                                                            </div>
-                                                            {producto.precio && (
-                                                                <span className="text-sm font-semibold">
-                                                                    {(
-                                                                        (producto.precio ||
-                                                                            0) *
-                                                                        (producto.cantidad ||
-                                                                            1)
-                                                                    ).toFixed(2)}
-                                                                    €
-                                                                </span>
-                                                            )}
+                                    {filterProductos(listaDos).map(
+                                        (producto) => (
+                                            <div
+                                                key={producto.id}
+                                                draggable
+                                                onDragStart={(e) =>
+                                                    handleDragStart(
+                                                        e,
+                                                        producto,
+                                                        "dos"
+                                                    )
+                                                }
+                                                onDragEnd={handleDragEnd}
+                                                className={`p-3 bg-white border rounded-md shadow-sm cursor-move transition-opacity hover:shadow-md ${
+                                                    dragging === producto.id
+                                                        ? "opacity-50"
+                                                        : "opacity-100"
+                                                }`}
+                                            >
+                                                <div className="font-medium text-lg text-green-800">
+                                                    {producto.nombre}
+                                                </div>
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-green-300 text-green-700"
+                                                    >
+                                                        {producto.categoria}
+                                                    </Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex items-center border rounded-md border-green-300">
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-8 w-8 p-0 hover:bg-green-600 hover:text-white transition-colors"
+                                                                onClick={() =>
+                                                                    decrementarCantidad(
+                                                                        producto.id
+                                                                    )
+                                                                }
+                                                            >
+                                                                -
+                                                            </Button>
+                                                            <span className="w-8 text-center text-green-800">
+                                                                {producto.cantidad ||
+                                                                    1}
+                                                            </span>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-8 w-8 p-0 hover:bg-green-600 hover:text-white transition-colors"
+                                                                onClick={() =>
+                                                                    incrementarCantidad(
+                                                                        producto.id
+                                                                    )
+                                                                }
+                                                            >
+                                                                +
+                                                            </Button>
                                                         </div>
+                                                        {producto.precio && (
+                                                            <span className="text-sm font-semibold text-green-800">
+                                                                {(
+                                                                    (producto.precio ||
+                                                                        0) *
+                                                                    (producto.cantidad ||
+                                                                        1)
+                                                                ).toFixed(2)}
+                                                                €
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    )}
                                 </div>
                             )}
                         </CardContent>
-                        <CardFooter>
-                            <div className="text-sm text-muted-foreground">
+                        <CardFooter className="flex justify-between items-center">
+                            <div className="text-sm text-green-500">
                                 {listaDos.length} productos en esta lista
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-lg font-semibold text-green-800">
+                                    Total: {calcularTotal().toFixed(2)}€
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleEmptyCart}
+                                    disabled={listaDos.length === 0}
+                                    className="border-green-500 text-green-800 hover:bg-green-500 hover:text-white transition-colors"
+                                >
+                                    Vaciar cesta
+                                </Button>
                             </div>
                         </CardFooter>
                     </Card>
@@ -366,8 +373,8 @@ function App() {
             </div>
 
             {/* Chat section */}
-            <div className="w-96 border-l p-4 bg-card">
-                <Chat 
+            <div className="w-96 border-l p-4 bg-white">
+                <Chat
                     productosDisponibles={listaUno}
                     productosSeleccionados={listaDos}
                 />
