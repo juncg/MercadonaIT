@@ -1,10 +1,18 @@
 import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const client = new OpenAI();
+
+// Initialize OpenAI client properly
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
 app.use(cors());
 app.use(express.json());
@@ -53,7 +61,7 @@ app.post("/api/chat", async (req, res) => {
     const { prompt } = req.body;
 
     try {
-        const response = await client.chat.completions.create({
+        const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: [{ role: "user", content: prompt }],
             max_tokens: 100,
