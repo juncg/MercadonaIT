@@ -190,7 +190,7 @@ function App() {
             <div className="flex-1 p-8 overflow-auto">
                 <div className="flex items-center justify-between mb-4">
                     <img
-                        src="src/assets/mercadona.png"
+                        src="/src/assets/mercadona.png"
                         alt="Logo de Mercadona"
                         className="h-12 w-auto object-contain"
                     />
