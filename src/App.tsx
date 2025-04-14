@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { DragEvent } from "react";
 import {
     Card,
     CardContent,
@@ -18,6 +19,7 @@ interface Producto {
     categoria: string;
     precio?: number;
     cantidad?: number;
+    imagen: string;
 }
 
 // Función para obtener la imagen según la categoría
@@ -42,15 +44,25 @@ function App() {
     const [listaDos, setListaDos] = useState<Producto[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState<string>("");
 
-    // Función para filtrar productos
-    const filterProductos = (productos: Producto[]) => {
-        const term = searchTerm.toLowerCase();
-        return productos.filter(
-            (producto) =>
-                producto.nombre.toLowerCase().includes(term) ||
-                producto.categoria.toLowerCase().includes(term)
+    // Funciones para manejar la cantidad de productos
+    const incrementarCantidad = (id: string) => {
+        setListaDos(prevList =>
+            prevList.map(producto =>
+                producto.id === id
+                    ? { ...producto, cantidad: (producto.cantidad || 1) + 1 }
+                    : producto
+            )
+        );
+    };
+
+    const decrementarCantidad = (id: string) => {
+        setListaDos(prevList =>
+            prevList.map(producto =>
+                producto.id === id && (producto.cantidad || 1) > 1
+                    ? { ...producto, cantidad: (producto.cantidad || 1) - 1 }
+                    : producto
+            )
         );
     };
 
@@ -68,9 +80,9 @@ function App() {
 
                 const data: Producto[] = await response.json();
 
-                // Inicialmente, todos los productos van a la lista uno
-                setListaUno(data);
-                setListaDos([]);
+                const mitad = Math.ceil(data.length / 2);
+                setListaUno(data.slice(0, mitad));
+                setListaDos(data.slice(mitad));
                 setError(null);
             } catch (err) {
                 console.error("Error:", err);
@@ -85,12 +97,10 @@ function App() {
         fetchProductos();
     }, []);
 
-    // Estado para el elemento que se está arrastrando
     const [dragging, setDragging] = useState<string | null>(null);
 
-    // Función que se ejecuta cuando comienza el arrastre
     const handleDragStart = (
-        e: React.DragEvent<HTMLDivElement>,
+        e: DragEvent<HTMLDivElement>,
         producto: Producto,
         origen: "uno" | "dos"
     ) => {
@@ -99,104 +109,64 @@ function App() {
         setDragging(producto.id);
     };
 
-    // Función que se ejecuta cuando se suelta un elemento
     const handleDrop = (
-        e: React.DragEvent<HTMLDivElement>,
+        e: DragEvent<HTMLDivElement>,
         destino: "uno" | "dos"
     ) => {
         e.preventDefault();
         const productoId = e.dataTransfer.getData("productoId");
         const origen = e.dataTransfer.getData("origen") as "uno" | "dos";
 
-        // Si el origen y el destino son iguales, no hacemos nada
         if (origen === destino) return;
 
-        // Encontrar el producto a mover
         let producto: Producto | undefined;
         if (origen === "uno") {
-            producto = listaUno.find((p) => p.id === productoId);
+            producto = listaUno.find((p: Producto) => p.id === productoId);
             if (producto) {
-                // Eliminar de lista uno y añadir a lista dos
-                setListaUno(listaUno.filter((p) => p.id !== productoId));
-                setListaDos([...listaDos, { ...producto, cantidad: 1 }]);
+                setListaUno(listaUno.filter((p: Producto) => p.id !== productoId));
+                setListaDos([...listaDos, producto]);
             }
         } else {
-            producto = listaDos.find((p) => p.id === productoId);
+            producto = listaDos.find((p: Producto) => p.id === productoId);
             if (producto) {
-                // Eliminar de lista dos y añadir a lista uno
-                setListaDos(listaDos.filter((p) => p.id !== productoId));
-                setListaUno([
-                    ...listaUno,
-                    { ...producto, cantidad: undefined },
-                ]);
+                setListaDos(listaDos.filter((p: Producto) => p.id !== productoId));
+                setListaUno([...listaUno, producto]);
             }
         }
 
         setDragging(null);
     };
 
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault(); // Necesario para permitir el drop
+    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
     };
 
     const handleDragEnd = () => {
         setDragging(null);
     };
 
-    // Función para vaciar la cesta
-    const handleEmptyCart = () => {
-        // Mover todos los productos de la lista dos a la lista uno
-        setListaUno([
-            ...listaUno,
-            ...listaDos.map((producto) => ({
-                ...producto,
-                cantidad: undefined,
-            })),
-        ]);
-        setListaDos([]);
-    };
-
-    // Función para incrementar la cantidad de un producto
-    const incrementarCantidad = (productoId: string) => {
-        setListaDos(
-            listaDos.map((producto) =>
-                producto.id === productoId
-                    ? { ...producto, cantidad: (producto.cantidad || 1) + 1 }
-                    : producto
-            )
-        );
-    };
-
-    // Función para decrementar la cantidad de un producto
-    const decrementarCantidad = (productoId: string) => {
-        setListaDos(
-            listaDos
-                .map((producto) => {
-                    if (producto.id === productoId) {
-                        const nuevaCantidad = (producto.cantidad || 1) - 1;
-                        if (nuevaCantidad < 1) {
-                            // Si la cantidad llega a 0, mover el producto de vuelta a la lista uno
-                            setListaUno((prev) => [
-                                ...prev,
-                                { ...producto, cantidad: undefined },
-                            ]);
-                            return null;
-                        }
-                        return { ...producto, cantidad: nuevaCantidad };
-                    }
-                    return producto;
-                })
-                .filter((producto): producto is Producto => producto !== null)
-        );
-    };
-
-    // Función para calcular el total de la cesta
-    const calcularTotal = () => {
-        return listaDos.reduce(
-            (total, producto) =>
-                total + (producto.precio || 0) * (producto.cantidad || 1),
-            0
-        );
+    const handleRefresh = () => {
+        setLoading(true);
+        fetch("http://localhost:3001/api/productos")
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Error al obtener los productos");
+                }
+                return response.json();
+            })
+            .then((data: Producto[]) => {
+                const mitad = Math.ceil(data.length / 2);
+                setListaUno(data.slice(0, mitad));
+                setListaDos(data.slice(mitad));
+                setError(null);
+            })
+            .catch((err) => {
+                console.error("Error:", err);
+                setError("No se pudieron cargar los productos.");
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     };
 
     return (
