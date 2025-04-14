@@ -241,15 +241,83 @@ app.get("/api/categorias/:categoria", (req, res) => {
 });
 
 app.post("/api/chat", async (req, res) => {
-    const { prompt } = req.body;
-    console.log(prompt);
-
     try {
-        const result = await model.generateContent(prompt);
+        const { prompt, productosDisponibles, productosSeleccionados } =
+            req.body;
+
+        // Validación mejorada
+        console.log("\n=== Nueva solicitud de chat ===");
+        console.log("Prompt recibido:", prompt);
+        console.log(
+            "Productos disponibles:",
+            JSON.stringify(productosDisponibles, null, 2)
+        );
+        console.log(
+            "Productos seleccionados:",
+            JSON.stringify(productosSeleccionados, null, 2)
+        );
+
+        if (!Array.isArray(productosDisponibles)) {
+            throw new Error("productosDisponibles debe ser un array");
+        }
+
+        if (productosDisponibles.length === 0) {
+            throw new Error("No hay productos disponibles");
+        }
+
+        // Crear listas formateadas de productos
+        const productosDisponiblesText = productosDisponibles
+            .map((p) => `${p.nombre} (${p.categoria}) - ${p.precio}€`)
+            .join("\n");
+
+        const productosSeleccionadosText =
+            productosSeleccionados && productosSeleccionados.length > 0
+                ? productosSeleccionados
+                      .map(
+                          (p) =>
+                              `${p.nombre} (${p.categoria}) x${
+                                  p.cantidad || 1
+                              } - ${p.precio}€`
+                      )
+                      .join("\n")
+                : "No hay productos seleccionados aún";
+
+        const enrichedPrompt = `
+        Como asistente experto en nutrición y alimentación, utiliza la siguiente información para responder:
+
+        PRODUCTOS DISPONIBLES:
+        ${productosDisponiblesText}
+
+        PRODUCTOS EN LA CESTA:
+        ${productosSeleccionadosText}
+
+        CONSULTA DEL USUARIO:
+        ${prompt}
+
+        INSTRUCCIONES:
+        - Responde basándote únicamente en los productos listados arriba
+        - Limita tu respuesta a tres párrafos cortos y concisos
+        - Si es una consulta sobre dieta, menciona productos específicos de la lista
+        - Estructura tu respuesta de manera clara y progresiva`;
+
+        console.log("\nPrompt enriquecido enviado al modelo:", enrichedPrompt);
+
+        const result = await model.generateContent(enrichedPrompt);
         const response = await result.response;
-        res.json({ response: response.text() });
+        const text = response.text();
+
+        console.log("\nRespuesta del modelo:", text);
+        console.log("=== Fin de la solicitud ===\n");
+
+        // Dividir la respuesta en párrafos
+        const paragraphs = text
+            .split("\n\n")
+            .filter((p) => p.trim())
+            .slice(0, 3);
+
+        res.json({ response: paragraphs.join("\n\n") });
     } catch (error) {
-        console.error("Error al comunicarse con Google AI:", error);
+        console.error("Error en /api/chat:", error);
 
         if (error.message?.includes("PERMISSION_DENIED")) {
             return res.status(429).json({
