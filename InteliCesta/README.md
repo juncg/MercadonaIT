@@ -1,6 +1,6 @@
-# Food Ordering App
+# InteliCesta
 
-This project is a food ordering application that allows users to select food items from a list and add them to their cart. 
+This project is a smart shopping list application that allows users to select products from a grid and add them to their shopping list.
 
 ## Features
 
