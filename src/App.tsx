@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { DragEvent } from "react";
 import {
     Card,
     CardContent,
@@ -18,6 +19,7 @@ interface Producto {
     categoria: string;
     precio?: number;
     cantidad?: number;
+    imagen: string;
 }
 
 function App() {
@@ -25,15 +27,25 @@ function App() {
     const [listaDos, setListaDos] = useState<Producto[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState<string>("");
 
-    // Función para filtrar productos
-    const filterProductos = (productos: Producto[]) => {
-        const term = searchTerm.toLowerCase();
-        return productos.filter(
-            (producto) =>
-                producto.nombre.toLowerCase().includes(term) ||
-                producto.categoria.toLowerCase().includes(term)
+    // Funciones para manejar la cantidad de productos
+    const incrementarCantidad = (id: string) => {
+        setListaDos(prevList =>
+            prevList.map(producto =>
+                producto.id === id
+                    ? { ...producto, cantidad: (producto.cantidad || 1) + 1 }
+                    : producto
+            )
+        );
+    };
+
+    const decrementarCantidad = (id: string) => {
+        setListaDos(prevList =>
+            prevList.map(producto =>
+                producto.id === id && (producto.cantidad || 1) > 1
+                    ? { ...producto, cantidad: (producto.cantidad || 1) - 1 }
+                    : producto
+            )
         );
     };
 
@@ -51,9 +63,9 @@ function App() {
 
                 const data: Producto[] = await response.json();
 
-                // Inicialmente, todos los productos van a la lista uno
-                setListaUno(data);
-                setListaDos([]);
+                const mitad = Math.ceil(data.length / 2);
+                setListaUno(data.slice(0, mitad));
+                setListaDos(data.slice(mitad));
                 setError(null);
             } catch (err) {
                 console.error("Error:", err);
@@ -68,12 +80,10 @@ function App() {
         fetchProductos();
     }, []);
 
-    // Estado para el elemento que se está arrastrando
     const [dragging, setDragging] = useState<string | null>(null);
 
-    // Función que se ejecuta cuando comienza el arrastre
     const handleDragStart = (
-        e: React.DragEvent<HTMLDivElement>,
+        e: DragEvent<HTMLDivElement>,
         producto: Producto,
         origen: "uno" | "dos"
     ) => {
@@ -82,121 +92,77 @@ function App() {
         setDragging(producto.id);
     };
 
-    // Función que se ejecuta cuando se suelta un elemento
     const handleDrop = (
-        e: React.DragEvent<HTMLDivElement>,
+        e: DragEvent<HTMLDivElement>,
         destino: "uno" | "dos"
     ) => {
         e.preventDefault();
         const productoId = e.dataTransfer.getData("productoId");
         const origen = e.dataTransfer.getData("origen") as "uno" | "dos";
 
-        // Si el origen y el destino son iguales, no hacemos nada
         if (origen === destino) return;
 
-        // Encontrar el producto a mover
         let producto: Producto | undefined;
         if (origen === "uno") {
-            producto = listaUno.find((p) => p.id === productoId);
+            producto = listaUno.find((p: Producto) => p.id === productoId);
             if (producto) {
-                // Eliminar de lista uno y añadir a lista dos
-                setListaUno(listaUno.filter((p) => p.id !== productoId));
-                setListaDos([...listaDos, { ...producto, cantidad: 1 }]);
+                setListaUno(listaUno.filter((p: Producto) => p.id !== productoId));
+                setListaDos([...listaDos, producto]);
             }
         } else {
-            producto = listaDos.find((p) => p.id === productoId);
+            producto = listaDos.find((p: Producto) => p.id === productoId);
             if (producto) {
-                // Eliminar de lista dos y añadir a lista uno
-                setListaDos(listaDos.filter((p) => p.id !== productoId));
-                setListaUno([
-                    ...listaUno,
-                    { ...producto, cantidad: undefined },
-                ]);
+                setListaDos(listaDos.filter((p: Producto) => p.id !== productoId));
+                setListaUno([...listaUno, producto]);
             }
         }
 
         setDragging(null);
     };
 
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault(); // Necesario para permitir el drop
+    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
     };
 
     const handleDragEnd = () => {
         setDragging(null);
     };
 
-    // Función para vaciar la cesta
-    const handleEmptyCart = () => {
-        // Mover todos los productos de la lista dos a la lista uno
-        setListaUno([
-            ...listaUno,
-            ...listaDos.map((producto) => ({
-                ...producto,
-                cantidad: undefined,
-            })),
-        ]);
-        setListaDos([]);
-    };
-
-    // Función para incrementar la cantidad de un producto
-    const incrementarCantidad = (productoId: string) => {
-        setListaDos(
-            listaDos.map((producto) =>
-                producto.id === productoId
-                    ? { ...producto, cantidad: (producto.cantidad || 1) + 1 }
-                    : producto
-            )
-        );
-    };
-
-    // Función para decrementar la cantidad de un producto
-    const decrementarCantidad = (productoId: string) => {
-        setListaDos(
-            listaDos
-                .map((producto) => {
-                    if (producto.id === productoId) {
-                        const nuevaCantidad = (producto.cantidad || 1) - 1;
-                        if (nuevaCantidad < 1) {
-                            // Si la cantidad llega a 0, mover el producto de vuelta a la lista uno
-                            setListaUno((prev) => [
-                                ...prev,
-                                { ...producto, cantidad: undefined },
-                            ]);
-                            return null;
-                        }
-                        return { ...producto, cantidad: nuevaCantidad };
-                    }
-                    return producto;
-                })
-                .filter((producto): producto is Producto => producto !== null)
-        );
-    };
-
-    // Función para calcular el total de la cesta
-    const calcularTotal = () => {
-        return listaDos.reduce(
-            (total, producto) =>
-                total + (producto.precio || 0) * (producto.cantidad || 1),
-            0
-        );
+    const handleRefresh = () => {
+        setLoading(true);
+        fetch("http://localhost:3001/api/productos")
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Error al obtener los productos");
+                }
+                return response.json();
+            })
+            .then((data: Producto[]) => {
+                const mitad = Math.ceil(data.length / 2);
+                setListaUno(data.slice(0, mitad));
+                setListaDos(data.slice(mitad));
+                setError(null);
+            })
+            .catch((err) => {
+                console.error("Error:", err);
+                setError("No se pudieron cargar los productos.");
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     };
 
     return (
         <div className="flex h-screen">
             <div className="flex-1 p-8 overflow-auto">
                 <h1 className="text-3xl font-bold mb-6 text-center">
-                    Productos disponibles
+                    Productos de Alimentación
                 </h1>
 
                 <div className="mb-6 flex justify-center">
-                    <input
-                        type="text"
-                        placeholder="Buscar productos..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="px-4 py-2 border rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <Button onClick={handleRefresh} disabled={loading}>
+                        {loading ? "Cargando..." : "Refrescar Productos"}
+                    </Button>
                 </div>
 
                 {error && (
@@ -213,13 +179,13 @@ function App() {
                     {/* Lista Uno - Usando Card de Shadcn */}
                     <Card className="flex-1">
                         <CardHeader>
-                            <CardTitle>Productos Disponibles</CardTitle>
+                            <CardTitle>Lista de Compra 1</CardTitle>
                             <CardDescription>
-                                Arrastra productos a tu cesta
+                                Arrastra productos a la otra lista
                             </CardDescription>
                         </CardHeader>
                         <CardContent
-                            className="border-2 border-dashed border-gray-200 rounded-md p-4 min-h-[300px] h-[300px] overflow-y-auto"
+                            className="border-2 border-dashed border-gray-200 rounded-md p-4 min-h-[400px]"
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, "uno")}
                         >
@@ -229,44 +195,54 @@ function App() {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {filterProductos(listaUno).map(
-                                        (producto) => (
-                                            <div
-                                                key={producto.id}
-                                                draggable
-                                                onDragStart={(e) =>
-                                                    handleDragStart(
-                                                        e,
-                                                        producto,
-                                                        "uno"
-                                                    )
-                                                }
-                                                onDragEnd={handleDragEnd}
-                                                className={`p-3 bg-card border rounded-md shadow-sm cursor-move transition-opacity ${
-                                                    dragging === producto.id
-                                                        ? "opacity-50"
-                                                        : "opacity-100"
-                                                } hover:shadow-md`}
-                                            >
-                                                <div className="font-medium text-lg">
-                                                    {producto.nombre}
-                                                </div>
-                                                <div className="flex justify-between items-center mt-1">
-                                                    <Badge variant="outline">
-                                                        {producto.categoria}
-                                                    </Badge>
-                                                    {producto.precio && (
-                                                        <span className="text-sm font-semibold">
-                                                            {producto.precio.toFixed(
-                                                                2
-                                                            )}
-                                                            €
-                                                        </span>
-                                                    )}
+                                    {listaUno.map((producto) => (
+                                        <div
+                                            key={producto.id}
+                                            draggable
+                                            onDragStart={(e) =>
+                                                handleDragStart(
+                                                    e,
+                                                    producto,
+                                                    "uno"
+                                                )
+                                            }
+                                            onDragEnd={handleDragEnd}
+                                            className={`p-3 bg-card border rounded-md shadow-sm cursor-move transition-opacity ${
+                                                dragging === producto.id
+                                                    ? "opacity-50"
+                                                    : "opacity-100"
+                                            } hover:shadow-md`}
+                                        >
+                                            <div className="flex gap-3">
+                                                <img
+                                                    src={producto.imagen}
+                                                    alt={producto.nombre}
+                                                    className="w-20 h-20 object-cover rounded-md"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = 'https://prod-mercadona.imgix.net/images/default_product.jpg';
+                                                    }}
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-lg">
+                                                        {producto.nombre}
+                                                    </div>
+                                                    <div className="flex justify-between items-center mt-1">
+                                                        <Badge variant="outline">
+                                                            {producto.categoria}
+                                                        </Badge>
+                                                        {producto.precio && (
+                                                            <span className="text-sm font-semibold">
+                                                                {producto.precio.toFixed(
+                                                                    2
+                                                                )}
+                                                                €
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        )
-                                    )}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </CardContent>
@@ -280,13 +256,13 @@ function App() {
                     {/* Lista Dos - Usando Card de Shadcn */}
                     <Card className="flex-1">
                         <CardHeader>
-                            <CardTitle>Cesta de la Compra</CardTitle>
+                            <CardTitle>Lista de Compra 2</CardTitle>
                             <CardDescription>
-                                Arrastra productos aquí
+                                Arrastra productos a la otra lista
                             </CardDescription>
                         </CardHeader>
                         <CardContent
-                            className="border-2 border-dashed border-gray-200 rounded-md p-4 min-h-[300px] h-[300px] overflow-y-auto"
+                            className="border-2 border-dashed border-gray-200 rounded-md p-4 min-h-[400px]"
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, "dos")}
                         >
@@ -296,95 +272,93 @@ function App() {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {filterProductos(listaDos).map(
-                                        (producto) => (
-                                            <div
-                                                key={producto.id}
-                                                draggable
-                                                onDragStart={(e) =>
-                                                    handleDragStart(
-                                                        e,
-                                                        producto,
-                                                        "dos"
-                                                    )
-                                                }
-                                                onDragEnd={handleDragEnd}
-                                                className={`p-3 bg-card border rounded-md shadow-sm cursor-move transition-opacity ${
-                                                    dragging === producto.id
-                                                        ? "opacity-50"
-                                                        : "opacity-100"
-                                                } hover:shadow-md`}
-                                            >
-                                                <div className="font-medium text-lg">
-                                                    {producto.nombre}
-                                                </div>
-                                                <div className="flex justify-between items-center mt-1">
-                                                    <Badge variant="outline">
-                                                        {producto.categoria}
-                                                    </Badge>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex items-center border rounded-md">
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="h-8 w-8 p-0"
-                                                                onClick={() =>
-                                                                    decrementarCantidad(
-                                                                        producto.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                -
-                                                            </Button>
-                                                            <span className="w-8 text-center">
-                                                                {producto.cantidad ||
-                                                                    1}
-                                                            </span>
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="h-8 w-8 p-0"
-                                                                onClick={() =>
-                                                                    incrementarCantidad(
-                                                                        producto.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                +
-                                                            </Button>
+                                    {listaDos.map((producto) => (
+                                        <div
+                                            key={producto.id}
+                                            draggable
+                                            onDragStart={(e) =>
+                                                handleDragStart(
+                                                    e,
+                                                    producto,
+                                                    "dos"
+                                                )
+                                            }
+                                            onDragEnd={handleDragEnd}
+                                            className={`p-3 bg-card border rounded-md shadow-sm cursor-move transition-opacity ${
+                                                dragging === producto.id
+                                                    ? "opacity-50"
+                                                    : "opacity-100"
+                                            } hover:shadow-md`}
+                                        >
+                                            <div className="flex gap-3">
+                                                <img
+                                                    src={producto.imagen}
+                                                    alt={producto.nombre}
+                                                    className="w-20 h-20 object-cover rounded-md"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = 'https://prod-mercadona.imgix.net/images/default_product.jpg';
+                                                    }}
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-lg">
+                                                        {producto.nombre}
+                                                    </div>
+                                                    <div className="flex justify-between items-center mt-1">
+                                                        <Badge variant="outline">
+                                                            {producto.categoria}
+                                                        </Badge>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="flex items-center border rounded-md">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-8 w-8 p-0"
+                                                                    onClick={() =>
+                                                                        decrementarCantidad(
+                                                                            producto.id
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    -
+                                                                </Button>
+                                                                <span className="w-8 text-center">
+                                                                    {producto.cantidad ||
+                                                                        1}
+                                                                </span>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    className="h-8 w-8 p-0"
+                                                                    onClick={() =>
+                                                                        incrementarCantidad(
+                                                                            producto.id
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    +
+                                                                </Button>
+                                                            </div>
+                                                            {producto.precio && (
+                                                                <span className="text-sm font-semibold">
+                                                                    {(
+                                                                        (producto.precio ||
+                                                                            0) *
+                                                                        (producto.cantidad ||
+                                                                            1)
+                                                                    ).toFixed(2)}
+                                                                    €
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        {producto.precio && (
-                                                            <span className="text-sm font-semibold">
-                                                                {(
-                                                                    (producto.precio ||
-                                                                        0) *
-                                                                    (producto.cantidad ||
-                                                                        1)
-                                                                ).toFixed(2)}
-                                                                €
-                                                            </span>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
-                                        )
-                                    )}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </CardContent>
-                        <CardFooter className="flex justify-between items-center">
+                        <CardFooter>
                             <div className="text-sm text-muted-foreground">
                                 {listaDos.length} productos en esta lista
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="text-lg font-semibold">
-                                    Total: {calcularTotal().toFixed(2)}€
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleEmptyCart}
-                                    disabled={listaDos.length === 0}
-                                >
-                                    Vaciar cesta
-                                </Button>
                             </div>
                         </CardFooter>
                     </Card>
@@ -393,7 +367,7 @@ function App() {
 
             {/* Chat section */}
             <div className="w-96 border-l p-4 bg-card">
-                <Chat
+                <Chat 
                     productosDisponibles={listaUno}
                     productosSeleccionados={listaDos}
                 />
