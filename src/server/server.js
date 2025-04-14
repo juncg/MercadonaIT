@@ -2,7 +2,6 @@ import express from "express";
 import process from "node:process";
 import * as dotenv from "dotenv-flow";
 import cors from "cors";
-import { join } from "path";
 
 dotenv.config({
 	default_node_env: "development",
@@ -10,10 +9,6 @@ dotenv.config({
 
 const app = express();
 app.use(cors());
-
-const outputPath = join(process.env.USERPROFILE, "Desktop", process.env.DOWNLOADS_FOLDER_NAME);
-let imageBuffer;
-let missingSongs = [];
 
 app.get("/api/v1/test", async (req, res) => {});
 
