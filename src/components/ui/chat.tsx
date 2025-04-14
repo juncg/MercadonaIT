@@ -7,7 +7,23 @@ interface Message {
     isUser: boolean;
 }
 
-export function Chat() {
+interface Producto {
+    id: string;
+    nombre: string;
+    categoria: string;
+    precio?: number;
+    cantidad?: number;
+}
+
+interface ChatProps {
+    productosDisponibles: Producto[];
+    productosSeleccionados: Producto[];
+}
+
+export function Chat({
+    productosDisponibles,
+    productosSeleccionados,
+}: ChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +43,11 @@ export function Chat() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ prompt: inputValue }),
+                body: JSON.stringify({
+                    prompt: inputValue,
+                    productosDisponibles,
+                    productosSeleccionados,
+                }),
             });
 
             if (!response.ok)
