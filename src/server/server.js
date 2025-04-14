@@ -1,8 +1,10 @@
 import express from "express";
 import cors from "cors";
+import OpenAI from "openai";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const client = new OpenAI();
 
 app.use(cors());
 app.use(express.json());
@@ -50,3 +52,20 @@ app.get("/api/categorias/:categoria", (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });
+
+app.post("/api/chat", async (req, res) => {
+    const { prompt } = req.body;
+
+    try {
+        const response = await client.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 100,
+        });
+
+        res.json({ response: response.choices[0].message.content });
+    } catch (error) {
+        console.error("Error al comunicarse con OpenAI:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+})
