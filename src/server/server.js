@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import OpenAI from "openai";
-import dotenv from 'dotenv';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
@@ -9,10 +9,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Initialize OpenAI client properly
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize Google AI client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 app.use(cors());
 app.use(express.json());
@@ -61,16 +60,24 @@ app.post("/api/chat", async (req, res) => {
     const { prompt } = req.body;
 
     try {
-        const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
-            max_tokens: 100,
-        });
-
-        res.json({ response: response.choices[0].message.content });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        res.json({ response: response.text() });
     } catch (error) {
-        console.error("Error al comunicarse con OpenAI:", error);
-        res.status(500).json({ error: "Error interno del servidor" });
+        console.error("Error al comunicarse con Google AI:", error);
+
+        if (error.message?.includes("PERMISSION_DENIED")) {
+            return res.status(429).json({
+                error: "Error de autenticación con Google AI. Por favor, verifica tu API key.",
+                details:
+                    "Asegúrate de que tu API key es válida y tiene los permisos necesarios.",
+            });
+        }
+
+        res.status(500).json({
+            error: "Error interno del servidor",
+            details: error.message,
+        });
     }
 });
 
