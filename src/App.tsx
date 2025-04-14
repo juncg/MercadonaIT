@@ -188,11 +188,11 @@ function App() {
     return (
         <div className="flex h-screen bg-green-50">
             <div className="flex-1 p-8 overflow-auto">
-                <div>
+                <div className="flex items-center justify-between mb-4">
                     <img
-                        src="/src/assets/mercadona.jpg"
+                        src="src/assets/mercadona.png"
                         alt="Logo de Mercadona"
-                        className="absolute top-4 left-4 h-20 w-auto z-10 pointer-events-none opacity-80"
+                        className="h-12 w-auto object-contain"
                     />
                 </div>
                 <h1 className="text-3xl font-bold mb-6 text-center text-green-800">
