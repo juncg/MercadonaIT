@@ -31,7 +31,7 @@ export function Chat({
     const [isLoading, setIsLoading] = useState(false);
 
     const presetQuestions = [
-        "Hazme una dieta con los productos de la lista",
+        "Hazme una dieta con los productos de mi cesta",
         "Recomiéndame productos saludables",
     ];
 

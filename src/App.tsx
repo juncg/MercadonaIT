@@ -20,6 +20,23 @@ interface Producto {
     cantidad?: number;
 }
 
+// Función para obtener la imagen según la categoría
+const getImageForCategory = (categoria: string): string => {
+    const images = {
+        Frutas: "/images/frutas.jpg",
+        Verduras: "/images/verduras.jpg",
+        Lácteos: "/images/lacteos.jpg",
+        Panadería: "/images/panaderia.jpg",
+        Carnicería: "/images/carniceria.jpg",
+        Pescadería: "/images/pescaderia.jpg",
+        Bebidas: "/images/bebidas.jpg",
+        Conservas: "/images/conservas.jpg",
+        Snacks: "/images/snacks.jpg",
+        Congelados: "/images/congelados.jpg",
+    };
+    return images[categoria as keyof typeof images] || "/images/default.jpg";
+};
+
 function App() {
     const [listaUno, setListaUno] = useState<Producto[]>([]);
     const [listaDos, setListaDos] = useState<Producto[]>([]);
@@ -230,7 +247,7 @@ function App() {
                                     <p>Cargando productos...</p>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="grid grid-cols-3 gap-3">
                                     {filterProductos(listaUno).map(
                                         (producto) => (
                                             <div
@@ -250,6 +267,15 @@ function App() {
                                                         : "opacity-100"
                                                 }`}
                                             >
+                                                <div className="w-full aspect-square mb-2 rounded-md overflow-hidden">
+                                                    <img
+                                                        src={getImageForCategory(
+                                                            producto.categoria
+                                                        )}
+                                                        alt={producto.categoria}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
                                                 <div className="font-medium text-lg text-green-800">
                                                     {producto.nombre}
                                                 </div>
@@ -302,7 +328,7 @@ function App() {
                                     <p>Cargando productos...</p>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="grid grid-cols-3 gap-3">
                                     {filterProductos(listaDos).map(
                                         (producto) => (
                                             <div
@@ -322,6 +348,15 @@ function App() {
                                                         : "opacity-100"
                                                 }`}
                                             >
+                                                <div className="w-full aspect-square mb-2 rounded-md overflow-hidden">
+                                                    <img
+                                                        src={getImageForCategory(
+                                                            producto.categoria
+                                                        )}
+                                                        alt={producto.categoria}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
                                                 <div className="font-medium text-lg text-green-800">
                                                     {producto.nombre}
                                                 </div>
@@ -403,7 +438,7 @@ function App() {
             </div>
 
             {/* Chat section */}
-            <div className="w-96 border-l p-4 bg-white">
+            <div className="w-100 border-l p-4 bg-white">
                 <Chat
                     productosDisponibles={listaUno}
                     productosSeleccionados={listaDos}
