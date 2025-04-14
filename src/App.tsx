@@ -19,36 +19,30 @@ interface Producto {
     categoria: string;
     precio?: number;
     cantidad?: number;
-    imagen: string;
+    imagen?: string;
 }
-
-// Función para obtener la imagen según la categoría
-const getImageForCategory = (categoria: string): string => {
-    const images = {
-        Frutas: "/images/frutas.jpg",
-        Verduras: "/images/verduras.jpg",
-        Lácteos: "/images/lacteos.jpg",
-        Panadería: "/images/panaderia.jpg",
-        Carnicería: "/images/carniceria.jpg",
-        Pescadería: "/images/pescaderia.jpg",
-        Bebidas: "/images/bebidas.jpg",
-        Conservas: "/images/conservas.jpg",
-        Snacks: "/images/snacks.jpg",
-        Congelados: "/images/congelados.jpg",
-    };
-    return images[categoria as keyof typeof images] || "/images/default.jpg";
-};
 
 function App() {
     const [listaUno, setListaUno] = useState<Producto[]>([]);
     const [listaDos, setListaDos] = useState<Producto[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState<string>("");
+
+    // Función para filtrar productos
+    const filterProductos = (productos: Producto[]) => {
+        const term = searchTerm.toLowerCase();
+        return productos.filter(
+            (producto) =>
+                producto.nombre.toLowerCase().includes(term) ||
+                producto.categoria.toLowerCase().includes(term)
+        );
+    };
 
     // Funciones para manejar la cantidad de productos
     const incrementarCantidad = (id: string) => {
-        setListaDos(prevList =>
-            prevList.map(producto =>
+        setListaDos((prevList) =>
+            prevList.map((producto) =>
                 producto.id === id
                     ? { ...producto, cantidad: (producto.cantidad || 1) + 1 }
                     : producto
@@ -57,8 +51,8 @@ function App() {
     };
 
     const decrementarCantidad = (id: string) => {
-        setListaDos(prevList =>
-            prevList.map(producto =>
+        setListaDos((prevList) =>
+            prevList.map((producto) =>
                 producto.id === id && (producto.cantidad || 1) > 1
                     ? { ...producto, cantidad: (producto.cantidad || 1) - 1 }
                     : producto
@@ -79,10 +73,8 @@ function App() {
                 }
 
                 const data: Producto[] = await response.json();
-
-                const mitad = Math.ceil(data.length / 2);
-                setListaUno(data.slice(0, mitad));
-                setListaDos(data.slice(mitad));
+                setListaUno(data);
+                setListaDos([]);
                 setError(null);
             } catch (err) {
                 console.error("Error:", err);
@@ -123,14 +115,21 @@ function App() {
         if (origen === "uno") {
             producto = listaUno.find((p: Producto) => p.id === productoId);
             if (producto) {
-                setListaUno(listaUno.filter((p: Producto) => p.id !== productoId));
-                setListaDos([...listaDos, producto]);
+                setListaUno(
+                    listaUno.filter((p: Producto) => p.id !== productoId)
+                );
+                setListaDos([...listaDos, { ...producto, cantidad: 1 }]);
             }
         } else {
             producto = listaDos.find((p: Producto) => p.id === productoId);
             if (producto) {
-                setListaDos(listaDos.filter((p: Producto) => p.id !== productoId));
-                setListaUno([...listaUno, producto]);
+                setListaDos(
+                    listaDos.filter((p: Producto) => p.id !== productoId)
+                );
+                setListaUno([
+                    ...listaUno,
+                    { ...producto, cantidad: undefined },
+                ]);
             }
         }
 
@@ -155,9 +154,7 @@ function App() {
                 return response.json();
             })
             .then((data: Producto[]) => {
-                const mitad = Math.ceil(data.length / 2);
-                setListaUno(data.slice(0, mitad));
-                setListaDos(data.slice(mitad));
+                setListaUno(data);
                 setError(null);
             })
             .catch((err) => {
@@ -169,9 +166,35 @@ function App() {
             });
     };
 
+    const handleEmptyCart = () => {
+        setListaUno((prev) => [
+            ...prev,
+            ...listaDos.map((producto) => ({
+                ...producto,
+                cantidad: undefined,
+            })),
+        ]);
+        setListaDos([]);
+    };
+
+    const calcularTotal = () => {
+        return listaDos.reduce(
+            (total, producto) =>
+                total + (producto.precio || 0) * (producto.cantidad || 1),
+            0
+        );
+    };
+
     return (
         <div className="flex h-screen bg-green-50">
             <div className="flex-1 p-8 overflow-auto">
+                <div>
+                    <img
+                        src="/src/assets/mercadona.jpg"
+                        alt="Logo de Mercadona"
+                        className="absolute top-4 left-4 h-20 w-auto z-10 pointer-events-none opacity-80"
+                    />
+                </div>
                 <h1 className="text-3xl font-bold mb-6 text-center text-green-800">
                     Productos disponibles
                 </h1>
@@ -217,7 +240,7 @@ function App() {
                                     <p>Cargando productos...</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-3 gap-2">
                                     {filterProductos(listaUno).map(
                                         (producto) => (
                                             <div
@@ -231,33 +254,31 @@ function App() {
                                                     )
                                                 }
                                                 onDragEnd={handleDragEnd}
-                                                className={`p-3 bg-white border rounded-md shadow-sm cursor-move transition-opacity hover:shadow-md ${
+                                                className={`p-2 bg-white border rounded-md shadow-sm cursor-move transition-all hover:shadow-md ${
                                                     dragging === producto.id
                                                         ? "opacity-50"
                                                         : "opacity-100"
                                                 }`}
                                             >
-                                                <div className="w-full aspect-square mb-2 rounded-md overflow-hidden">
+                                                <div className="w-full aspect-square mb-1 rounded-md overflow-hidden">
                                                     <img
-                                                        src={getImageForCategory(
-                                                            producto.categoria
-                                                        )}
-                                                        alt={producto.categoria}
+                                                        src={producto.imagen}
+                                                        alt={producto.nombre}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>
-                                                <div className="font-medium text-lg text-green-800">
+                                                <div className="font-medium text-sm text-green-800 truncate">
                                                     {producto.nombre}
                                                 </div>
                                                 <div className="flex justify-between items-center mt-1">
                                                     <Badge
                                                         variant="outline"
-                                                        className="border-green-300 text-green-700"
+                                                        className="border-green-300 text-green-700 text-xs"
                                                     >
                                                         {producto.categoria}
                                                     </Badge>
                                                     {producto.precio && (
-                                                        <span className="text-sm font-semibold text-green-800">
+                                                        <span className="text-xs font-semibold text-green-800">
                                                             {producto.precio.toFixed(
                                                                 2
                                                             )}
@@ -298,7 +319,7 @@ function App() {
                                     <p>Cargando productos...</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-3 gap-2">
                                     {filterProductos(listaDos).map(
                                         (producto) => (
                                             <div
@@ -312,36 +333,35 @@ function App() {
                                                     )
                                                 }
                                                 onDragEnd={handleDragEnd}
-                                                className={`p-3 bg-white border rounded-md shadow-sm cursor-move transition-opacity hover:shadow-md ${
+                                                className={`p-2 bg-white border rounded-md shadow-sm cursor-move transition-all hover:shadow-md ${
                                                     dragging === producto.id
                                                         ? "opacity-50"
                                                         : "opacity-100"
                                                 }`}
                                             >
-                                                <div className="w-full aspect-square mb-2 rounded-md overflow-hidden">
+                                                <div className="w-full aspect-square mb-1 rounded-md overflow-hidden">
                                                     <img
-                                                        src={getImageForCategory(
-                                                            producto.categoria
-                                                        )}
-                                                        alt={producto.categoria}
+                                                        src={producto.imagen}
+                                                        alt={producto.nombre}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>
-                                                <div className="font-medium text-lg text-green-800">
+                                                <div className="font-medium text-sm text-green-800 truncate">
                                                     {producto.nombre}
                                                 </div>
-                                                <div className="flex justify-between items-center mt-1">
+                                                <div className="flex flex-col gap-1">
                                                     <Badge
                                                         variant="outline"
-                                                        className="border-green-300 text-green-700"
+                                                        className="border-green-300 text-green-700 text-xs w-fit"
                                                     >
                                                         {producto.categoria}
                                                     </Badge>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex items-center border rounded-md border-green-300">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-0 border rounded border-green-300 bg-white">
                                                             <Button
                                                                 variant="ghost"
-                                                                className="h-8 w-8 p-0 hover:bg-green-600 hover:text-white transition-colors"
+                                                                size="sm"
+                                                                className="h-6 w-6 p-0 hover:bg-green-600 hover:text-white transition-colors"
                                                                 onClick={() =>
                                                                     decrementarCantidad(
                                                                         producto.id
@@ -350,13 +370,14 @@ function App() {
                                                             >
                                                                 -
                                                             </Button>
-                                                            <span className="w-8 text-center text-green-800">
+                                                            <span className="w-6 text-center text-green-800 text-xs">
                                                                 {producto.cantidad ||
                                                                     1}
                                                             </span>
                                                             <Button
                                                                 variant="ghost"
-                                                                className="h-8 w-8 p-0 hover:bg-green-600 hover:text-white transition-colors"
+                                                                size="sm"
+                                                                className="h-6 w-6 p-0 hover:bg-green-600 hover:text-white transition-colors"
                                                                 onClick={() =>
                                                                     incrementarCantidad(
                                                                         producto.id
@@ -367,7 +388,7 @@ function App() {
                                                             </Button>
                                                         </div>
                                                         {producto.precio && (
-                                                            <span className="text-sm font-semibold text-green-800">
+                                                            <span className="text-xs font-semibold text-green-800">
                                                                 {(
                                                                     (producto.precio ||
                                                                         0) *

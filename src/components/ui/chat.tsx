@@ -15,6 +15,7 @@ interface Producto {
     categoria: string;
     precio?: number;
     cantidad?: number;
+    imagen?: string;
 }
 
 interface ChatProps {
