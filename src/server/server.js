@@ -49,10 +49,6 @@ app.get("/api/categorias/:categoria", (req, res) => {
     res.json(productosFiltrados);
 });
 
-app.listen(PORT, () => {
-    console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
-});
-
 app.post("/api/chat", async (req, res) => {
     const { prompt } = req.body;
 
@@ -68,4 +64,8 @@ app.post("/api/chat", async (req, res) => {
         console.error("Error al comunicarse con OpenAI:", error);
         res.status(500).json({ error: "Error interno del servidor" });
     }
-})
+});
+
+app.listen(PORT, () => {
+    console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
+});
