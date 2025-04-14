@@ -192,7 +192,7 @@ function App() {
                     <img
                         src="/src/assets/mercadona.png"
                         alt="Logo de Mercadona"
-                        className="h-12 w-auto object-contain"
+                        className="absolute top-10 left-10 h-20 w-auto z-10 pointer-events-none opacity-80"
                     />
                 </div>
                 <h1 className="text-3xl font-bold mb-6 text-center text-green-800">

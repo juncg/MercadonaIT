@@ -19,7 +19,7 @@ def getLink(p):
 
     result = ""
 
-    try:        
+    try:
         for a in soup.findAll(attrs={'class': classnames}):
             name = a.find("img")
             result = name.get("src")
@@ -30,47 +30,47 @@ def getLink(p):
     return result
 
 productos = [
-    "Manzanas", 
-    "Plátanos", 
-    "Naranjas", 
-    "Peras", 
-    "Fresas", 
-    "Uvas", 
-    "Kiwis", 
-    "Melocotones", 
-    "Sandía", 
-    "Melón", 
-    "Tomates", 
-    "Zanahorias", 
-    "Patatas", 
-    "Cebollas", 
-    "Pimientos", 
-    "Pepinos", 
-    "Berenjenas", 
-    "Calabacines", 
-    "Lechugas", 
-    "Espinacas", 
-    "Leche Entera", 
-    "Leche Desnatada", 
-    "Queso Fresco", 
-    "Queso Curado", 
-    "Yogur Natural", 
-    "Yogur de Frutas", 
-    "Mantequilla", 
-    "Nata", 
-    "Queso Rallado", 
-    "Queso Lonchas", 
-    "Pan Blanco", 
-    "Pan Integral", 
-    "Baguette", 
-    "Croissants", 
-    "Magdalenas", 
-    "Pan de Molde", 
-    "Napolitanas", 
-    "Donuts", 
-    "Pan Rallado", 
-    "Palmeras", 
-    "Pollo Entero", 
+    "Manzanas",
+    "Plátanos",
+    "Naranjas",
+    "Peras",
+    "Fresas",
+    "Uvas",
+    "Kiwis",
+    "Melocotones",
+    "Sandía",
+    "Melón",
+    "Tomates",
+    "Zanahorias",
+    "Patatas",
+    "Cebollas",
+    "Pimientos",
+    "Pepinos",
+    "Berenjenas",
+    "Calabacines",
+    "Lechugas",
+    "Espinacas",
+    "Leche Entera",
+    "Leche Desnatada",
+    "Queso Fresco",
+    "Queso Curado",
+    "Yogur Natural",
+    "Yogur de Frutas",
+    "Mantequilla",
+    "Nata",
+    "Queso Rallado",
+    "Queso Lonchas",
+    "Pan Blanco",
+    "Pan Integral",
+    "Baguette",
+    "Croissants",
+    "Magdalenas",
+    "Pan de Molde",
+    "Napolitanas",
+    "Donuts",
+    "Pan Rallado",
+    "Palmeras",
+    "Pollo Entero",
 ]
 
 import requests
@@ -91,7 +91,7 @@ for pro in productos:
         image.save(path, "PNG", quality=80)
     else:
         print("not found:", pro)
-    
+
     if os.path.exists(path):
         results.append("ok")
     else:
