@@ -1,5 +1,3 @@
-Sure, here's the content for the file: /food-ordering-app/food-ordering-app/backend/src/app.js
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const apiRoutes = require('./routes/api');
