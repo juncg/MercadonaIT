@@ -21,11 +21,13 @@ interface Producto {
 interface ChatProps {
     productosDisponibles: Producto[];
     productosSeleccionados: Producto[];
+    onAddToCart?: (productos: Producto[]) => void;
 }
 
 export function Chat({
     productosDisponibles,
     productosSeleccionados,
+    onAddToCart,
 }: ChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
@@ -34,6 +36,7 @@ export function Chat({
     const presetQuestions = [
         "Hazme una dieta con los productos de mi cesta",
         "Recomiéndame productos saludables",
+        "Añade a mi cesta los productos para hacer una tortilla de patatas",
     ];
 
     useEffect(() => {
@@ -153,6 +156,11 @@ export function Chat({
 
             const parts = data.response.split("\n\n").filter(Boolean);
 
+            // Check if the response includes products to add
+            if (data.productos && data.productos.length > 0 && onAddToCart) {
+                onAddToCart(data.productos);
+            }
+
             const aiMessage: Message = {
                 text: parts[0],
                 isUser: false,
@@ -183,12 +191,12 @@ export function Chat({
             <CardContent className="flex-grow overflow-y-auto space-y-4">
                 {/* Preset Questions */}
                 {messages.length === 0 && (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 w-full">
                         {presetQuestions.map((question, index) => (
                             <Button
                                 key={index}
                                 variant="outline"
-                                className="text-left"
+                                className="text-left w-full whitespace-normal break-words min-h-[44px] justify-start"
                                 onClick={() => handlePresetQuestion(question)}
                             >
                                 {question}

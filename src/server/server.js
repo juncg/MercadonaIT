@@ -250,6 +250,13 @@ const productos = [
         precio: 5.9,
         imagen: "/images/Pollo Entero.png",
     },
+    {
+        id: "42",
+        nombre: "Huevos",
+        categoria: "Panadería",
+        precio: 1.2,
+        imagen: "/images/Huevos.png",
+    },
     // ...existing code for other meat products with placeholder images...
 ];
 
@@ -321,6 +328,8 @@ app.post("/api/chat", async (req, res) => {
         ${prompt}
 
         INSTRUCCIONES:
+        - Si el usuario pide añadir productos a la cesta, lista claramente los productos que deberían añadirse.
+        - Si estás recomendando productos para una receta, enumera los productos necesarios.
         - Responde basándote únicamente en los productos listados arriba
         - Limita tu respuesta a tres párrafos cortos y concisos
         - Si es una consulta sobre dieta, menciona productos específicos de la lista
@@ -332,7 +341,24 @@ app.post("/api/chat", async (req, res) => {
         const response = await result.response;
         const text = response.text();
 
+        // Analizar la respuesta para detectar productos mencionados
+        const productosParaAñadir = [];
+        if (
+            prompt.toLowerCase().includes("añade") ||
+            prompt.toLowerCase().includes("agregar") ||
+            prompt.toLowerCase().includes("poner")
+        ) {
+            productosDisponibles.forEach((producto) => {
+                if (
+                    text.toLowerCase().includes(producto.nombre.toLowerCase())
+                ) {
+                    productosParaAñadir.push(producto);
+                }
+            });
+        }
+
         console.log("\nRespuesta del modelo:", text);
+        console.log("Productos detectados para añadir:", productosParaAñadir);
         console.log("=== Fin de la solicitud ===\n");
 
         // Dividir la respuesta en párrafos
@@ -341,7 +367,10 @@ app.post("/api/chat", async (req, res) => {
             .filter((p) => p.trim())
             .slice(0, 3);
 
-        res.json({ response: paragraphs.join("\n\n") });
+        res.json({
+            response: paragraphs.join("\n\n"),
+            productos: productosParaAñadir,
+        });
     } catch (error) {
         console.error("Error en /api/chat:", error);
 

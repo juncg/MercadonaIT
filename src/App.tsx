@@ -185,6 +185,19 @@ function App() {
         );
     };
 
+    const handleAddProductsFromChat = (productos: Producto[]) => {
+        productos.forEach((producto) => {
+            const existingProduct = listaUno.find((p) => p.id === producto.id);
+            if (existingProduct) {
+                setListaUno((prev) => prev.filter((p) => p.id !== producto.id));
+                setListaDos((prev) => [
+                    ...prev,
+                    { ...existingProduct, cantidad: 1 },
+                ]);
+            }
+        });
+    };
+
     return (
         <div className="flex h-screen bg-green-50">
             <div className="flex-1 p-8 overflow-auto">
@@ -433,6 +446,7 @@ function App() {
                 <Chat
                     productosDisponibles={listaUno}
                     productosSeleccionados={listaDos}
+                    onAddToCart={handleAddProductsFromChat}
                 />
             </div>
         </div>
